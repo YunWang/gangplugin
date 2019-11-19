@@ -1,0 +1,7 @@
+domain: wangyun.com
+repo: github.com/YunWang/gangplugin
+resources:
+- group: batch
+  kind: Gang
+  version: v1
+version: "2"

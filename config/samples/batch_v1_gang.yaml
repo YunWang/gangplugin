@@ -1,0 +1,7 @@
+apiVersion: batch.wangyun.com/v1
+kind: Gang
+metadata:
+  name: gang-sample
+spec:
+  # Add fields here
+  foo: bar

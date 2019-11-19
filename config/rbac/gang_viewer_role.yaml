@@ -1,0 +1,20 @@
+# permissions to do viewer gangs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gang-viewer-role
+rules:
+- apiGroups:
+  - batch.wangyun.com
+  resources:
+  - gangs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - batch.wangyun.com
+  resources:
+  - gangs/status
+  verbs:
+  - get

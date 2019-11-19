@@ -1,0 +1,110 @@
+/*
+Copyright 2019 wangyun.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package controllers
+
+import (
+	"context"
+	"k8s.io/apimachinery/pkg/api/errors"
+	logModule "github.com/YunWang/gangplugin/pkg/log"
+
+	"k8s.io/apimachinery/pkg/types"
+	"reflect"
+
+	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	batchv1 "github.com/YunWang/gangplugin/pkg/api/v1"
+)
+
+// GangReconciler reconciles a Gang object
+type GangReconciler struct {
+	client.Client
+	Log    logr.Logger
+	Scheme *runtime.Scheme
+}
+
+// +kubebuilder:rbac:groups=batch.wangyun.com,resources=gangs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=batch.wangyun.com,resources=gangs/status,verbs=get;update;patch
+
+func (r *GangReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+	ctx := context.Background()
+	log := r.Log.WithValues("gang", req.NamespacedName)
+
+	// your logic here
+	//1.get gang
+	//2.set default gang status
+	//3.sync status
+	log.V(logModule.Info).Info("Begin to reconcile Gang{Namespace:"+req.Namespace+",Name:"+req.Name+"}")
+
+	//1.
+	gang:=&batchv1.Gang{}
+	err:=r.Get(ctx,req.NamespacedName,gang)
+	if err!=nil {
+		if errors.IsNotFound(err) {
+			log.V(logModule.Debug).Info("Gang has been deleted!")
+			return ctrl.Result{},nil
+		}
+		log.V(logModule.Debug).Info("Failed to get Gang{Namespace:"+req.Namespace+",Name:"+req.Name+"}")
+		return ctrl.Result{},err
+	}
+
+	//2.
+	err=r.setDefaultStatus(gang)
+	if err!=nil {
+		return ctrl.Result{},err
+	}
+
+	//3.
+	oldGang :=&batchv1.Gang{}
+	err = r.Get(ctx,types.NamespacedName{Namespace:gang.Namespace,Name:gang.Name},oldGang)
+	if err != nil {
+		log.V(logModule.Info).Info("Failed to get old gang")
+		return ctrl.Result{}, err
+	}
+
+	if !reflect.DeepEqual(oldGang.Status, gang.Status) {
+		oldGang.Status = gang.Status
+		if err := r.Update(ctx, oldGang); err != nil {
+			log.V(logModule.Info).Info("Failed to update gang")
+			return ctrl.Result{}, err
+		}
+	}
+
+	log.V(logModule.Info).Info("Reconcile gang successfully!")
+
+	return ctrl.Result{}, nil
+}
+
+func (r *GangReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&batchv1.Gang{}).
+		Complete(r)
+}
+
+//default is 0 for all status
+func (r *GangReconciler)setDefaultStatus(g *batchv1.Gang)error{
+	g.Status.Total=0
+	g.Status.Running=0
+	g.Status.Succeeded=0
+	if g.Status.Total!=g.Status.Running+g.Status.Succeeded{
+		r.Log.V(logModule.Debug).Info("Failed to set default status for gang,because total!=running+succeeded")
+		return errors.NewBadRequest("Total!=running+Succeeded")
+	}
+	return nil
+}
