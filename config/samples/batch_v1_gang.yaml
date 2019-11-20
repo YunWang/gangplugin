@@ -4,4 +4,4 @@ metadata:
   name: gang-sample
 spec:
   # Add fields here
-  foo: bar
+  minGang: 3

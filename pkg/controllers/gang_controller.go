@@ -18,11 +18,11 @@ package controllers
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/api/errors"
 	logModule "github.com/YunWang/gangplugin/pkg/log"
-
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
+	"sync"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -35,6 +35,7 @@ import (
 // GangReconciler reconciles a Gang object
 type GangReconciler struct {
 	client.Client
+	RWLock sync.RWMutex
 	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
@@ -50,43 +51,45 @@ func (r *GangReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//1.get gang
 	//2.set default gang status
 	//3.sync status
-	log.V(logModule.Info).Info("Begin to reconcile Gang{Namespace:"+req.Namespace+",Name:"+req.Name+"}")
+	log.V(logModule.Trace).Info("Begin to reconcile Gang{Namespace:" + req.Namespace + ",Name:" + req.Name + "}")
 
 	//1.
-	gang:=&batchv1.Gang{}
-	err:=r.Get(ctx,req.NamespacedName,gang)
-	if err!=nil {
+	gang := &batchv1.Gang{}
+	err := r.Get(ctx, req.NamespacedName, gang)
+	if err != nil {
 		if errors.IsNotFound(err) {
-			log.V(logModule.Debug).Info("Gang has been deleted!")
-			return ctrl.Result{},nil
+			log.V(logModule.Trace).Info("Gang has been deleted!")
+			return ctrl.Result{}, nil
 		}
-		log.V(logModule.Debug).Info("Failed to get Gang{Namespace:"+req.Namespace+",Name:"+req.Name+"}")
-		return ctrl.Result{},err
+		log.V(logModule.Trace).Info("Failed to get Gang{Namespace:" + req.Namespace + ",Name:" + req.Name + "}")
+		return ctrl.Result{}, err
 	}
 
 	//2.
-	err=r.setDefaultStatus(gang)
-	if err!=nil {
-		return ctrl.Result{},err
+	err = r.setDefaultStatus(gang)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
 	//3.
-	oldGang :=&batchv1.Gang{}
-	err = r.Get(ctx,types.NamespacedName{Namespace:gang.Namespace,Name:gang.Name},oldGang)
+	oldGang := &batchv1.Gang{}
+	err = r.Get(ctx, types.NamespacedName{Namespace: gang.Namespace, Name: gang.Name}, oldGang)
 	if err != nil {
-		log.V(logModule.Info).Info("Failed to get old gang")
+		log.V(logModule.Trace).Info("Failed to get old gang")
 		return ctrl.Result{}, err
 	}
 
 	if !reflect.DeepEqual(oldGang.Status, gang.Status) {
 		oldGang.Status = gang.Status
-		if err := r.Update(ctx, oldGang); err != nil {
-			log.V(logModule.Info).Info("Failed to update gang")
+		r.RWLock.Lock()
+		defer r.RWLock.Unlock()
+		if err := r.Status().Update(ctx, oldGang); err != nil {
+			log.V(logModule.Trace).Info("Failed to update gang")
 			return ctrl.Result{}, err
 		}
 	}
 
-	log.V(logModule.Info).Info("Reconcile gang successfully!")
+	log.V(logModule.Trace).Info("Reconcile gang successfully!")
 
 	return ctrl.Result{}, nil
 }
@@ -98,13 +101,16 @@ func (r *GangReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 //default is 0 for all status
-func (r *GangReconciler)setDefaultStatus(g *batchv1.Gang)error{
-	g.Status.Total=0
-	g.Status.Running=0
-	g.Status.Succeeded=0
-	if g.Status.Total!=g.Status.Running+g.Status.Succeeded{
-		r.Log.V(logModule.Debug).Info("Failed to set default status for gang,because total!=running+succeeded")
-		return errors.NewBadRequest("Total!=running+Succeeded")
+func (r *GangReconciler) setDefaultStatus(g *batchv1.Gang) error {
+	g.Status.Total = 0
+	g.Status.Running = 0
+	g.Status.Succeeded = 0
+	g.Status.Pending = 0
+	g.Status.Failed = 0
+	g.Status.Unknown = 0
+	if !g.Validate() {
+		r.Log.V(logModule.Trace).Info("Failed to set default status for gang,because total!=running+succeeded")
+		return errors.NewBadRequest("Total!=running+Succeeded+pending+failed+unknown")
 	}
 	return nil
 }

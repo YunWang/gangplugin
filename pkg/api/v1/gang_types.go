@@ -23,22 +23,40 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+//All pods and jobs which are managed by gang must have the annotation whose key is GangKey and value is gang's name
+const GangKey string = "batch.wangyun.com/gang"
+
 // GangSpec defines the desired state of Gang
 type GangSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Gang. Edit Gang_types.go to remove/update
-	MinGang int32 `json:"mingang,omitempty"`
+	MinGang int32 `json:"minGang,omitempty"`
 }
 
 // GangStatus defines the observed state of Gang
 type GangStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Running   int32 `json:"running,omitempty"`
+
+	// PodRunning means the pod has been bound to a node and all of the containers have been started.
+	// At least one container is still running or is in the process of being restarted.
+	Running int32 `json:"running,omitempty"`
+	// PodSucceeded means that all containers in the pod have voluntarily terminated
+	// with a container exit code of 0, and the system is not going to restart any of these containers.
 	Succeeded int32 `json:"succeeded,omitempty"`
-	Total     int32 `json:"total,omitempty"`
+	// PodPending means the pod has been accepted by the system, but one or more of the containers
+	// has not been started. This includes time before being bound to a node, as well as time spent
+	// pulling images onto the host.
+	Pending int32 `json:"pending,omitempty"`
+	// PodFailed means that all containers in the pod have terminated, and at least one container has
+	// terminated in a failure (exited with a non-zero exit code or was stopped by the system).
+	Failed int32 `json:"failed,omitempty"`
+	// PodUnknown means that for some reason the state of the pod could not be obtained, typically due
+	// to an error in communicating with the host of the pod.
+	Unknown int32 `json:"unknown,omitempty"`
+	Total   int32 `json:"total,omitempty"`
 }
 
 // +kubebuilder:object:root=true

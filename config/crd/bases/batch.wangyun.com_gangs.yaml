@@ -1,0 +1,92 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.2
+  creationTimestamp: null
+  name: gangs.batch.wangyun.com
+spec:
+  group: batch.wangyun.com
+  names:
+    kind: Gang
+    listKind: GangList
+    plural: gangs
+    singular: gang
+  scope: ""
+  validation:
+    openAPIV3Schema:
+      description: Gang is the Schema for the gangs API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: GangSpec defines the desired state of Gang
+          properties:
+            mingang:
+              description: Foo is an example field of Gang. Edit Gang_types.go to
+                remove/update
+              format: int32
+              type: integer
+          type: object
+        status:
+          description: GangStatus defines the observed state of Gang
+          properties:
+            failed:
+              description: PodFailed means that all containers in the pod have terminated,
+                and at least one container has terminated in a failure (exited with
+                a non-zero exit code or was stopped by the system).
+              format: int32
+              type: integer
+            pending:
+              description: PodPending means the pod has been accepted by the system,
+                but one or more of the containers has not been started. This includes
+                time before being bound to a node, as well as time spent pulling images
+                onto the host.
+              format: int32
+              type: integer
+            running:
+              description: PodRunning means the pod has been bound to a node and all
+                of the containers have been started. At least one container is still
+                running or is in the process of being restarted.
+              format: int32
+              type: integer
+            succeeded:
+              description: PodSucceeded means that all containers in the pod have
+                voluntarily terminated with a container exit code of 0, and the system
+                is not going to restart any of these containers.
+              format: int32
+              type: integer
+            total:
+              format: int32
+              type: integer
+            unknown:
+              description: PodUnknown means that for some reason the state of the
+                pod could not be obtained, typically due to an error in communicating
+                with the host of the pod.
+              format: int32
+              type: integer
+          type: object
+      type: object
+  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
