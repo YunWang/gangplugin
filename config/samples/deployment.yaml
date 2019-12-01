@@ -13,7 +13,8 @@ spec:
         app: nginx
       annotations:
         batch.wangyun.com/gang: gang-sample
-        update: qwe
+      finalizers:
+        - batch.wangyun.com/gang
     spec:
       containers:
         - name: nginx

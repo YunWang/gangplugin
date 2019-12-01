@@ -21,7 +21,8 @@ import (
 	"os"
 
 	batchv1 "github.com/YunWang/gangplugin/pkg/api/v1"
-	"github.com/YunWang/gangplugin/pkg/controllers"
+	gangController "github.com/YunWang/gangplugin/pkg/controllers/gang_controller"
+	podController "github.com/YunWang/gangplugin/pkg/controllers/pod_controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -65,20 +66,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	//if err = (&controllers.GangReconciler{
-	//	Client: mgr.GetClient(),
-	//	Log:    ctrl.Log.WithName("controllers").WithName("Gang"),
-	//	Scheme: mgr.GetScheme(),
-	//}).SetupWithManager(mgr); err != nil {
-	//	setupLog.Error(err, "unable to create controller", "controller", "Gang")
-	//	os.Exit(1)
-	//}
-	if err = controllers.NewPodController(mgr.GetClient(), ctrl.Log.
-		WithName("controllers").
-		WithName("Pod"), mgr.GetScheme()).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "Failed to create controller", "controller", "Pod")
+	if err := gangController.NewGangReconcile(mgr.GetClient(),ctrl.Log,mgr.GetScheme()).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Gang")
 		os.Exit(1)
 	}
+	if err:=podController.NewPodController(mgr.GetClient(),ctrl.Log,mgr.GetScheme()).SetupWithManager(mgr);err!=nil{
+		setupLog.Error(err, "unable to create controller", "controller", "Pod")
+		os.Exit(1)
+	}
+	//if err = controllers.NewPodController(mgr.GetClient(), ctrl.Log.
+	//	WithName("controllers").WithName("Pod"),
+	//	mgr.GetScheme()).
+	//	SetupWithManager(mgr); err != nil {
+	//	setupLog.Error(err, "Failed to create controller", "controller", "Pod")
+	//	os.Exit(1)
+	//}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")
