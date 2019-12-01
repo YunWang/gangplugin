@@ -74,8 +74,8 @@ func (r *GangReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	failedNum:=int32(0)
 	unknownNum:=int32(0)
 	for _,pod := range podList.Items {
-		if gangName,exist:=pod.Annotations[batchv1.GangKey];exist {
-			if gangName == gang.Name{
+		if gangName,exist:=pod.Annotations[batchv1.GangKey];exist && pod.DeletionTimestamp.IsZero() {
+			if gangName == gang.Name {
 				switch pod.Status.Phase {
 				case v1.PodSucceeded:
 					succeedNum+=1
